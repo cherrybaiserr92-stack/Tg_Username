@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Магазин юзернеймов</title>
+    <!-- Подключаем Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2a7de1, #42a5f5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--tg-theme-hint-color, #8e8e93);
+            font-size: 14px;
+        }
+
+        .username-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background-color: var(--tg-theme-secondary-bg-color, #f8f8f8);
+            border-radius: 16px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid var(--tg-theme-button-color, transparent);
+            opacity: 0.9;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .username {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            word-break: break-word;
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .username span {
+            background-color: var(--tg-theme-button-color, #2a7de1);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+
+        .price {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--tg-theme-button-color, #2a7de1);
+            margin-bottom: 16px;
+        }
+
+        .price span {
+            font-size: 14px;
+            font-weight: normal;
+            color: var(--tg-theme-hint-color, #8e8e93);
+        }
+
+        .buy-btn {
+            width: 100%;
+            background-color: var(--tg-theme-button-color, #2a7de1);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .buy-btn:active {
+            transform: scale(0.97);
+        }
+
+        .buy-btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #8e8e93);
+            margin-top: 20px;
+            padding: 16px 0;
+            border-top: 0.5px solid var(--tg-theme-hint-color, #c6c6c8);
+        }
+
+        /* Адаптация под темную тему */
+        @media (prefers-color-scheme: dark) {
+            .card {
+                background-color: var(--tg-theme-secondary-bg-color, #1c1c1e);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Premium Usernames</h1>
+            <p>Купи уникальный юзернейм для Telegram</p>
+        </div>
+
+        <div id="usernames-list" class="username-grid">
+            <!-- Список будет загружен динамически -->
+        </div>
+
+        <div class="footer">
+            🔒 Безопасная сделка через Telegram Stars
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем на весь экран
+        tg.ready();
+
+        // Данные о пользователе (опционально)
+        const user = tg.initDataUnsafe?.user;
+        console.log('Пользователь:', user);
+
+        // Пример каталога юзернеймов. В реальном приложении данные можно получать с сервера.
+        const usernamesCatalog = [
+            { id: 1, name: 'cool', price: 50, description: 'Короткий и запоминающийся' },
+            { id: 2, name: 'genius', price: 75, description: 'Для интеллектуалов' },
+            { id: 3, name: 'hacker', price: 100, description: 'Tech-стиль' },
+            { id: 4, name: 'dreamer', price: 45, description: 'Романтичный образ' },
+            { id: 5, name: 'winner', price: 120, description: 'Для победителей' },
+            { id: 6, name: 'legend', price: 200, description: 'Статус Легенда' }
+        ];
+
+        // Функция для рендера карточек
+        function renderCatalog() {
+            const container = document.getElementById('usernames-list');
+            if (!container) return;
+
+            container.innerHTML = usernamesCatalog.map(item => `
+                <div class="card" data-id="${item.id}">
+                    <div class="username">
+                        @${item.name}
+                        <span>⭐ ${item.price}</span>
+                    </div>
+                    <div class="price">
+                        ${item.price} <span>Telegram Stars</span>
+                    </div>
+                    <button class="buy-btn" data-username="${item.name}" data-price="${item.price}">
+                        Купить
+                    </button>
+                </div>
+            `).join('');
+
+            // Добавляем обработчики на кнопки "Купить"
+            document.querySelectorAll('.buy-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const username = btn.getAttribute('data-username');
+                    const price = btn.getAttribute('data-price');
+                    handlePurchase(username, price);
+                });
+            });
+        }
+
+        // Функция обработки покупки
+        async function handlePurchase(username, price) {
+            // Показываем индикатор загрузки (меняем текст кнопки)
+            const allBtns = document.querySelectorAll('.buy-btn');
+            let targetBtn = null;
+            for (let btn of allBtns) {
+                if (btn.getAttribute('data-username') === username) {
+                    targetBtn = btn;
+                    break;
+                }
+            }
+            if (targetBtn) {
+                const originalText = targetBtn.innerText;
+                targetBtn.innerText = 'Обработка...';
+                targetBtn.disabled = true;
+                targetBtn.classList.add('disabled');
+                
+                // Имитация небольшой задержки (можно убрать)
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Отправляем данные боту
+                const purchaseData = {
+                    action: 'purchase_username',
+                    username: username,
+                    price: parseInt(price),
+                    user_id: user?.id || null
+                };
+                
+                try {
+                    // Способ 1: Отправить данные через sendData – бот получит событие message с этими данными
+                    tg.sendData(JSON.stringify(purchaseData));
+                    
+                    // Способ 2: Можно вызвать платёж через Telegram Stars (если бот создаст инвойс)
+                    // Для демонстрации сначала попробуем отправить данные, а потом покажем уведомление
+                    tg.showPopup({
+                        title: '✅ Запрос отправлен',
+                        message: `Вы выбрали юзернейм @${username} за ${price} ⭐. Бот свяжется с вами для завершения покупки.`,
+                        buttons: [{ type: 'ok', text: 'OK' }]
+                    });
+                    
+                    // После успешной отправки можно закрыть приложение или оставить открытым
+                    // tg.close(); // по желанию
+                } catch (error) {
+                    console.error('Ошибка отправки:', error);
+                    tg.showPopup({
+                        title: 'Ошибка',
+                        message: 'Не удалось отправить запрос. Попробуйте позже.',
+                        buttons: [{ type: 'ok', text: 'OK' }]
+                    });
+                } finally {
+                    // Возвращаем кнопку в исходное состояние
+                    targetBtn.innerText = originalText;
+                    targetBtn.disabled = false;
+                    targetBtn.classList.remove('disabled');
+                }
+            }
+        }
+
+        // Если нужно обработать нажатие главной кнопки (можно использовать для корзины etc.)
+        tg.MainButton.text = "Корзина";
+        tg.MainButton.onClick(() => {
+            tg.showAlert('Функция корзины будет доступна в следующем обновлении!');
+        });
+        // Показываем главную кнопку, если нужно
+        // tg.MainButton.show();
+
+        // Запуск рендера
+        renderCatalog();
+
+        // Дополнительно: можно попросить бота прислать актуальный список юзернеймов
+        // Здесь для простоты используем статический массив.
+        // В реальном проекте отправляем запрос типа: tg.sendData(JSON.stringify({ action: 'get_catalog' }));
+        // и слушаем onEvent('message') – но это сложнее, так как бот отвечает отдельным сообщением.
+        // Поэтому предлагается получать каталог через обычный fetch к вашему API.
+        // Для демонстрации оставляем статику.
+    </script>
+</body>
+</html>
